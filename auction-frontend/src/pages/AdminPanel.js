@@ -12,6 +12,62 @@ const initialForm = {
 
 const SECTORS = ["Technology","Finance","Healthcare","Energy","Consumer","Industrial","Real Estate","Utilities"];
 
+const IconLayers = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+    <polyline points="2 17 12 22 22 17"/>
+    <polyline points="2 12 12 17 22 12"/>
+  </svg>
+);
+
+const IconRadio = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="2"/>
+    <path d="M16.24 7.76a6 6 0 010 8.49M7.76 16.24a6 6 0 010-8.49"/>
+    <path d="M20.49 3.51a12 12 0 010 16.97M3.51 20.49a12 12 0 010-16.97"/>
+  </svg>
+);
+
+const IconGavel = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2L20 8M11 5L19 13M3 21l7-7M14 8l-9 9a2 2 0 102.83 2.83L17 11"/>
+  </svg>
+);
+
+const IconTrendUp = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+  </svg>
+);
+
+const IconSliders = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
+    <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
+    <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
+    <line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
+  </svg>
+);
+
+const IconMonitor = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="2"/>
+    <path d="M16.24 7.76a6 6 0 010 8.49M7.76 16.24a6 6 0 010-8.49"/>
+  </svg>
+);
+
+const IconPlus = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+);
+
+const IconStar = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--yellow)" stroke="none">
+    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+  </svg>
+);
+
 export default function AdminPanel() {
   const { addToast } = useToast();
   const navigate     = useNavigate();
@@ -95,15 +151,15 @@ export default function AdminPanel() {
     }
   };
 
-  const totalBids  = Object.values(allBids).reduce((s, b) => s + b.length, 0);
-  const liveCount  = auctions.filter((a) => a.status === "open").length;
-  const totalVol   = auctions.reduce((s, a) => s + a.currentHighestBid * (a.totalShares - a.remainingShares), 0);
+  const totalBids    = Object.values(allBids).reduce((s, b) => s + b.length, 0);
+  const liveCount    = auctions.filter((a) => a.status === "open").length;
+  const totalVol     = auctions.reduce((s, a) => s + a.currentHighestBid * (a.totalShares - a.remainingShares), 0);
   const liveAuctions = auctions.filter((a) => a.status === "open");
 
   const TABS = [
-    { key: "monitor", label: "Live Monitor", icon: "📡" },
-    { key: "manage",  label: "Manage",       icon: "⚙️" },
-    { key: "create",  label: "Create",       icon: "+" },
+    { key: "monitor", label: "Live Monitor", icon: <IconMonitor /> },
+    { key: "manage",  label: "Manage",       icon: <IconSliders /> },
+    { key: "create",  label: "Create",       icon: <IconPlus /> },
   ];
 
   return (
@@ -115,7 +171,7 @@ export default function AdminPanel() {
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
           <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em" }}>Admin Panel</h1>
           {liveCount > 0 && (
-            <div style={{ display: "flex", alignItems: "center", gap: 5, background: "var(--green-dim)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 20, padding: "3px 10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, background: "var(--green-dim)", border: "1px solid rgba(22,163,74,0.25)", borderRadius: 20, padding: "3px 10px" }}>
               <span className="live-dot" style={{ width: 6, height: 6 }} />
               <span style={{ fontSize: 11, fontWeight: 700, color: "var(--green)" }}>{liveCount} LIVE</span>
             </div>
@@ -127,13 +183,17 @@ export default function AdminPanel() {
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
         {[
-          { label: "Total Auctions", value: auctions.length, icon: "📊", color: "var(--accent)",   bg: "var(--accent-dim)" },
-          { label: "Live Now",       value: liveCount,       icon: "🔴", color: "var(--green)",    bg: "var(--green-dim)" },
-          { label: "Total Bids",     value: totalBids,       icon: "⚡", color: "var(--yellow)",   bg: "var(--yellow-dim)" },
-          { label: "Total Volume",   value: `₹${(totalVol / 1e7).toFixed(2)} Cr`, icon: "💰", color: "var(--purple)", bg: "var(--purple-dim)" },
+          { label: "Total Auctions", value: auctions.length,                          icon: <IconLayers />,  color: "var(--accent)",  bg: "var(--accent-dim)"  },
+          { label: "Live Now",       value: liveCount,                                icon: <IconRadio />,   color: "var(--green)",   bg: "var(--green-dim)"   },
+          { label: "Total Bids",     value: totalBids,                                icon: <IconGavel />,   color: "var(--yellow)",  bg: "var(--yellow-dim)"  },
+          { label: "Total Volume",   value: `₹${(totalVol / 1e7).toFixed(2)} Cr`,    icon: <IconTrendUp />, color: "var(--purple)",  bg: "var(--purple-dim)"  },
         ].map((s) => (
           <div key={s.label} className="stat-card" style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            <div style={{ width: 38, height: 38, borderRadius: 10, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 10,
+              background: s.bg, color: s.color, flexShrink: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
               {s.icon}
             </div>
             <div>
@@ -155,7 +215,7 @@ export default function AdminPanel() {
             display: "flex", alignItems: "center", gap: 6,
             transition: "all 0.12s",
           }}>
-            <span style={{ fontSize: 13 }}>{t.icon}</span>
+            {t.icon}
             {t.label}
           </button>
         ))}
@@ -170,21 +230,32 @@ export default function AdminPanel() {
               background: "var(--bg-card)", border: "1px solid var(--border)",
               borderRadius: "var(--radius-lg)",
             }}>
-              <div style={{ fontSize: 32, marginBottom: 12 }}>📡</div>
+              <div style={{
+                width: 56, height: 56, borderRadius: 14,
+                background: "var(--bg-secondary)", border: "1px solid var(--border)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                margin: "0 auto 16px", color: "var(--text-muted)",
+              }}>
+                <IconRadio />
+              </div>
               <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 4 }}>No live auctions</div>
               <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Open an upcoming auction or create a new one to start monitoring</div>
             </div>
           ) : liveAuctions.map((auction) => {
             const bids = allBids[auction.id] || [];
-            const topBid = bids[0];
-            const chg = ((auction.currentHighestBid - auction.basePrice) / auction.basePrice) * 100;
+            const chg  = ((auction.currentHighestBid - auction.basePrice) / auction.basePrice) * 100;
 
             return (
-              <div key={auction.id} style={{ background: "var(--bg-card)", border: "1px solid rgba(34,197,94,0.15)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
+              <div key={auction.id} style={{
+                background: "var(--bg-card)",
+                border: "1px solid rgba(22,163,74,0.2)",
+                borderLeft: "3px solid var(--green)",
+                borderRadius: "var(--radius-lg)", overflow: "hidden",
+              }}>
                 {/* Card header */}
                 <div style={{
-                  background: "linear-gradient(135deg, #0d2e1a 0%, #0f1a10 100%)",
-                  borderBottom: "1px solid rgba(34,197,94,0.15)",
+                  background: "var(--bg-secondary)",
+                  borderBottom: "1px solid rgba(22,163,74,0.12)",
                   padding: "14px 18px",
                   display: "flex", alignItems: "center", justifyContent: "space-between",
                 }}>
@@ -192,7 +263,7 @@ export default function AdminPanel() {
                     <div style={{ position: "relative" }}>
                       <div style={{
                         width: 36, height: 36, borderRadius: 10,
-                        background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.25)",
+                        background: "rgba(22,163,74,0.1)", border: "1px solid rgba(22,163,74,0.2)",
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 15, fontWeight: 800, color: "var(--green)",
                       }}>{auction.logo}</div>
@@ -204,8 +275,8 @@ export default function AdminPanel() {
                         <span className="ticker-tag">{auction.ticker}</span>
                       </div>
                       <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                        {bids.length} bid{bids.length !== 1 ? "s" : ""} ·
-                        <span style={{ fontFamily: "var(--font-mono)", color: "var(--green)", marginLeft: 4 }}>
+                        {bids.length} bid{bids.length !== 1 ? "s" : ""} ·{" "}
+                        <span style={{ fontFamily: "var(--font-mono)", color: "var(--green)", fontWeight: 700 }}>
                           ₹{auction.currentHighestBid.toLocaleString("en-IN")}
                         </span>
                         <span style={{ color: chg >= 0 ? "var(--green)" : "var(--red)", marginLeft: 6, fontWeight: 700 }}>
@@ -256,7 +327,7 @@ export default function AdminPanel() {
                         <tr key={bid.id} className={bid.status === "highest" ? "highest-bidder" : ""}>
                           <td style={{ fontWeight: 700, fontSize: 12 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                              {i === 0 && <span style={{ fontSize: 14 }}>🏆</span>}
+                              {i === 0 && <IconStar />}
                               {bid.bidder}
                             </div>
                           </td>
@@ -334,13 +405,9 @@ export default function AdminPanel() {
                     </span>
                   </td>
                   <td>
-                    {a.status === "open" ? (
-                      <span className="badge-open">LIVE</span>
-                    ) : a.status === "upcoming" ? (
-                      <span className="badge-upcoming">UPCOMING</span>
-                    ) : (
-                      <span className="badge-closed">CLOSED</span>
-                    )}
+                    {a.status === "open" ? <span className="badge-open">LIVE</span>
+                      : a.status === "upcoming" ? <span className="badge-upcoming">UPCOMING</span>
+                      : <span className="badge-closed">CLOSED</span>}
                   </td>
                   <td style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-secondary)" }}>₹{a.basePrice.toLocaleString("en-IN")}</td>
                   <td style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>₹{a.currentHighestBid.toLocaleString("en-IN")}</td>
@@ -375,10 +442,7 @@ export default function AdminPanel() {
             background: "var(--bg-card)", border: "1px solid var(--border)",
             borderRadius: "var(--radius-lg)", overflow: "hidden",
           }}>
-            <div style={{
-              background: "var(--bg-secondary)", borderBottom: "1px solid var(--border)",
-              padding: "14px 20px",
-            }}>
+            <div style={{ background: "var(--bg-secondary)", borderBottom: "1px solid var(--border)", padding: "14px 20px" }}>
               <div className="section-title">Create New Auction</div>
               <div className="section-sub">Launch a new stock or IPO listing</div>
             </div>
@@ -421,9 +485,7 @@ export default function AdminPanel() {
                     <label className="form-label">Total Shares</label>
                     <input className="input-field" type="number" min="1" value={form.totalShares} onChange={(e) => setForm({ ...form, totalShares: e.target.value })} placeholder="e.g. 500000" required style={{ fontFamily: "var(--font-mono)" }} />
                   </div>
-                  <div className="form-field" style={{ marginBottom: 0 }}>
-                    {/* intentionally empty for visual balance */}
-                  </div>
+                  <div className="form-field" style={{ marginBottom: 0 }} />
                 </div>
 
                 <div className="form-field">
@@ -450,24 +512,14 @@ export default function AdminPanel() {
                 </div>
 
                 <div style={{ display: "flex", gap: 10 }}>
-                  <button
-                    type="submit"
-                    className="btn-primary"
-                    style={{ flex: 1, padding: "12px 20px", fontSize: 13, fontWeight: 700 }}
-                    disabled={creating}
-                  >
+                  <button type="submit" className="btn-primary" style={{ flex: 1, padding: "12px 20px", fontSize: 13, fontWeight: 700 }} disabled={creating}>
                     {creating ? (
                       <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                         <span className="spinner-sm" /> Creating...
                       </span>
                     ) : "Launch Auction →"}
                   </button>
-                  <button
-                    type="button"
-                    className="btn-outline"
-                    style={{ padding: "12px 20px", fontSize: 13 }}
-                    onClick={() => setForm(initialForm)}
-                  >
+                  <button type="button" className="btn-outline" style={{ padding: "12px 20px", fontSize: 13 }} onClick={() => setForm(initialForm)}>
                     Reset
                   </button>
                 </div>

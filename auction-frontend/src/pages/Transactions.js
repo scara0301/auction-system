@@ -54,7 +54,20 @@ export default function Transactions() {
           background: "var(--bg-card)", border: "1px solid var(--border)",
           borderRadius: "var(--radius-lg)",
         }}>
-          <div style={{ fontSize: 40, marginBottom: 16 }}>📄</div>
+          <div style={{
+            width: 60, height: 60, borderRadius: 16,
+            background: "var(--bg-secondary)", border: "1px solid var(--border)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            margin: "0 auto 18px", color: "var(--text-muted)",
+          }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </div>
           <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 6 }}>
             No transactions yet
           </div>
@@ -67,17 +80,52 @@ export default function Transactions() {
           {/* Summary cards */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 24 }}>
             {[
-              { label: "Total Transactions", value: transactions.length,                                                           icon: "🔄", color: "var(--accent)",  bg: "var(--accent-dim)" },
-              { label: "Companies",          value: uniqueCompanies,                                                               icon: "🏢", color: "var(--purple)", bg: "var(--purple-dim)" },
-              { label: "Total Invested",     value: `₹${total.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,            icon: "💎", color: "var(--green)",  bg: "var(--green-dim)" },
+              {
+                label: "Total Transactions",
+                value: transactions.length,
+                color: "var(--accent)",
+                bg: "var(--accent-dim)",
+                icon: (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 4 23 10 17 10"/>
+                    <polyline points="1 20 1 14 7 14"/>
+                    <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                  </svg>
+                ),
+              },
+              {
+                label: "Companies",
+                value: uniqueCompanies,
+                color: "var(--purple)",
+                bg: "var(--purple-dim)",
+                icon: (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <path d="M9 9h2M9 13h2M13 9h2M13 13h2M9 17h6"/>
+                  </svg>
+                ),
+              },
+              {
+                label: "Total Invested",
+                value: `₹${total.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
+                color: "var(--green)",
+                bg: "var(--green-dim)",
+                icon: (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="1" x2="12" y2="23"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                  </svg>
+                ),
+              },
             ].map((s) => (
               <div key={s.label} className="stat-card" style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                 <div style={{
                   width: 40, height: 40, borderRadius: 10,
-                  background: s.bg,
+                  background: s.bg, color: s.color, flexShrink: 0,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 19, flexShrink: 0,
-                }}>{s.icon}</div>
+                }}>
+                  {s.icon}
+                </div>
                 <div>
                   <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
                     {s.label}
@@ -95,7 +143,6 @@ export default function Transactions() {
             background: "var(--bg-card)", border: "1px solid var(--border)",
             borderRadius: "var(--radius-md)", overflow: "hidden",
           }}>
-            {/* Table header bar */}
             <div style={{
               background: "var(--bg-secondary)", borderBottom: "1px solid var(--border)",
               padding: "10px 16px",
@@ -128,7 +175,7 @@ export default function Transactions() {
                             width: 32, height: 32, borderRadius: 8,
                             background: color + "20", border: `1px solid ${color}44`,
                             display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: 13, fontWeight: 800, color: color, flexShrink: 0,
+                            fontSize: 13, fontWeight: 800, color, flexShrink: 0,
                           }}>
                             {t.company_name?.[0] || "?"}
                           </div>
