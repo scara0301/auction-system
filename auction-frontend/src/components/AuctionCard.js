@@ -135,10 +135,20 @@ export default function AuctionCard({ auction }) {
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <div style={{ fontSize:11, color:"var(--text-muted)", display:"flex", alignItems:"center", gap:5 }}>
             {isLive ? (
-              <>
-                <span style={{ fontSize:9, textTransform:"uppercase", fontWeight:700, letterSpacing:"0.06em" }}>Closes in</span>
-                <Timer endTime={auction.endTime} compact />
-              </>
+              new Date(auction.endTime) > Date.now() ? (
+                <>
+                  <span style={{ fontSize:9, textTransform:"uppercase", fontWeight:700, letterSpacing:"0.06em" }}>Closes in</span>
+                  <Timer endTime={auction.endTime} compact />
+                </>
+              ) : (
+                <span style={{ fontSize:9, textTransform:"uppercase", fontWeight:700, letterSpacing:"0.06em", color:"var(--yellow)" }}>
+                  Awaiting close
+                </span>
+              )
+            ) : isClosed ? (
+              <span style={{ fontFamily:"var(--font-mono)" }}>
+                {(auction.bidCount || 0)} bids
+              </span>
             ) : (
               <span style={{ fontFamily:"var(--font-mono)" }}>
                 {(auction.bidCount || 0)} bids

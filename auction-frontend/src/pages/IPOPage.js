@@ -175,10 +175,16 @@ function IPOCard({ ipo, onClick }) {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
             {isLive ? (
-              <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <span style={{ fontSize: 9, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.06em" }}>Ends</span>
-                <Timer endTime={ipo.endTime} compact />
-              </span>
+              new Date(ipo.endTime) > Date.now() ? (
+                <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ fontSize: 9, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.06em" }}>Ends</span>
+                  <Timer endTime={ipo.endTime} compact />
+                </span>
+              ) : (
+                <span style={{ fontSize: 9, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.06em", color: "var(--yellow)" }}>
+                  Awaiting close
+                </span>
+              )
             ) : ipo.status === "upcoming" ? (
               <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <span style={{ fontSize: 9, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.06em" }}>Opens</span>
