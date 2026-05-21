@@ -76,7 +76,7 @@ export default function Portfolio() {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", marginBottom: 4 }}>Portfolio</h1>
+          <h1 className="gradient-text gradient-text-candy" style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", marginBottom: 4 }}>Portfolio</h1>
           <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Holdings allocated from closed auctions</p>
         </div>
         {portfolio.length > 0 && (
@@ -203,7 +203,7 @@ export default function Portfolio() {
 
           {/* ── Cards view ── */}
           {view === "cards" && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 14 }}>
+            <div className="stagger-children" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 14 }}>
               {portfolio.map((h, i) => {
                 const currentValue  = h.currentPrice * h.quantity;
                 const gain          = currentValue - h.totalInvestment;

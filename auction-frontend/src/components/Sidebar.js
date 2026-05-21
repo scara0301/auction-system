@@ -40,6 +40,11 @@ const IconLogout = () => (
     <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
   </svg>
 );
+const IconSettings = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+  </svg>
+);
 
 const investorLinks = [
   { path: "/",            label: "Dashboard",     icon: <IconDashboard />,    exact: true },
@@ -47,6 +52,7 @@ const investorLinks = [
   { path: "/ipo",        label: "IPO",           icon: <IconIPO /> },
   { path: "/portfolio",  label: "Portfolio",     icon: <IconPortfolio /> },
   { path: "/transactions", label: "Transactions", icon: <IconTransactions /> },
+  { path: "/settings",   label: "Settings",      icon: <IconSettings /> },
 ];
 
 const adminLinks = [
@@ -54,6 +60,7 @@ const adminLinks = [
   { path: "/auctions", label: "Auctions", icon: <IconAuctions /> },
   { path: "/ipo",    label: "IPO",         icon: <IconIPO /> },
   { path: "/admin",  label: "Admin Panel", icon: <IconAdmin /> },
+  { path: "/settings", label: "Settings",  icon: <IconSettings /> },
 ];
 
 export default function Sidebar() {
@@ -71,7 +78,7 @@ export default function Sidebar() {
       <div className="sidebar-header">
         <div className="sidebar-logo-mark">SA</div>
         <div className="sidebar-logo-text">
-          <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>Stock</span>
+          <span style={{ color: "#e2e8f0", fontWeight: 700 }}>Stock</span>
           <span style={{ color: "var(--accent)" }}>Auction</span>
         </div>
       </div>

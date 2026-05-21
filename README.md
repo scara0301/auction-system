@@ -385,7 +385,7 @@ user (user_id)
   └──► watchlist.user_id    — stocks they are watching
 ```
 
-`user` is the **root actor** in the system. All investor activity (bidding, portfolio, transactions, watchlist) traces back to a `user_id`. The `role` column (`investor` vs `admin`) determines which API routes are accessible — it is set server-side on registration and never accepted from the client. The `balance` column is reserved for future deduction logic; the `CHECK (balance >= 0)` constraint prevents it from going negative.
+`user` is the **root actor** in the system. All investor activity (bidding, portfolio, transactions, watchlist) traces back to a `user_id`. The `role` column (`investor` vs `admin`) determines which API routes are accessible — it is set server-side on registration and never accepted from the client. The `balance` column is validated when a bid is placed (the bid total must fit within the balance) and debited during allocation when shares are awarded; the `CHECK (balance >= 0)` constraint prevents it from ever going negative.
 
 ---
 
@@ -567,7 +567,7 @@ auction (auction_id) ──► bid_ranking.auction_id   (which auction's results
 bid     (bid_id)     ──► bid_ranking.bid_id        (which bid was ranked)
 ```
 
-`bid_ranking` is **populated atomically** during auction close — it is never written to during the open bidding phase. Each row records a bid's final rank and exactly how many shares were allocated to it. A bid that was outbid entirely still gets a `bid_ranking` row with `allocated_quantity = 0`, providing a complete audit trail. The double FK to both `auction` and `bid` allows the Admin Panel to join directly to the ranking without re-sorting all bids.
+`bid_ranking` is **populated atomically** during auction close — it is never written to during the open bidding phase. Each row records a bid's final rank and exactly how many shares were allocated to it. Only bids that receive at least one share get a `bid_ranking` row; bids that win nothing (supply exhausted before their turn, or the bidder cannot afford any shares) are skipped. The double FK to both `auction` and `bid` allows the Admin Panel to join directly to the ranking without re-sorting all bids.
 
 ---
 
@@ -685,21 +685,23 @@ BEGIN TRANSACTION
 │    type='ipo'   → SELECT total_shares      FROM ipo   WHERE ipo_id  = reference_id
 ├─ SELECT * FROM bid WHERE auction_id = $1 ORDER BY bid_price DESC, bid_time ASC
 │
+├─ IPO only: resolve settlement stock row (INSERT/UPSERT at clearing price)
+│
 ├─ FOR each bid (price-time priority):
-│    allocated = MIN(bid.quantity, remaining)
+│    allocated = MIN(bid.quantity, remaining, FLOOR(user.balance / bid_price))
+│    (skip bidder if allocated <= 0)
 │    INSERT INTO bid_ranking  (auction_id, bid_id, rank_position, allocated_quantity)
 │    INSERT INTO "transaction" (user_id, auction_id, quantity, price, total_amount)
 │    INSERT INTO portfolio … ON CONFLICT (user_id, stock_id) DO UPDATE
 │         SET quantity_owned = quantity_owned + excluded.quantity_owned,
 │             avg_price      = weighted_avg_formula
+│    UPDATE "user" SET balance = balance - (allocated × bid_price)
 │
-├─ UPDATE stock SET available_shares = remaining_after_allocation
-│
-└─ IPO only: if no stock row for company → INSERT INTO stock (…)
+└─ UPDATE stock SET available_shares = remaining   (stock and IPO settlement rows)
 COMMIT
 ```
 
-Tables touched: `auction`, `bid`, `bid_ranking`, `transaction`, `portfolio`, `stock`, `ipo`
+Tables touched: `auction`, `bid`, `bid_ranking`, `transaction`, `portfolio`, `stock`, `ipo`, `user`
 
 ---
 
@@ -839,24 +841,28 @@ BEGIN;
 
 2. Fetch available capacity:
    - stock auction → stock.available_shares
-   - IPO auction   → ipo.total_shares
+   - IPO auction   → ipo.total_shares  (and mark ipo.status = 'closed')
 
 3. SELECT bids WHERE auction_id = $1
    ORDER BY bid_price DESC, bid_time ASC
    -- Price priority; time as tiebreaker (FIFO)
 
-4. FOR each bid (in rank order):
-     allocated = MIN(bid.quantity, remaining_shares)
-     IF allocated > 0:
+4. IPO only: resolve the settlement stock row once, before the loop —
+   INSERT a stock row at the clearing price (or UPSERT if one exists)
+
+5. FOR each bid (in rank order):
+     IF remaining_shares <= 0: BREAK
+     affordable = FLOOR(user.balance / bid.bid_price)
+     allocated  = MIN(bid.quantity, remaining_shares, affordable)
+     IF allocated <= 0: CONTINUE          -- can't afford any → skip this bidder
        INSERT INTO bid_ranking (rank_position, allocated_quantity)
        INSERT INTO transaction (user_id, quantity, price, total_amount)
        UPSERT  portfolio (weighted avg price merge)
+       UPDATE  "user" SET balance = balance - (allocated × bid_price)
        remaining_shares -= allocated
 
-5. UPDATE stock SET available_shares = remaining_shares
-
-6. IPO only: if no stock row exists for this company,
-   CREATE stock at clearing price (highest allocated bid price)
+6. UPDATE stock SET available_shares = remaining_shares
+   -- applies to BOTH stock and IPO settlement rows, so leftover shares are preserved
 
 COMMIT;  -- or ROLLBACK on any error
 ```
@@ -864,7 +870,8 @@ COMMIT;  -- or ROLLBACK on any error
 **Key properties:**
 - All-or-nothing: a failure at any step rolls back the entire allocation.
 - Partial allocation is supported: a bid may receive fewer shares than requested if supply runs out mid-ranking.
-- Zero-allocation bids still receive a `bid_ranking` row with `allocated_quantity = 0`.
+- Bids that win no shares (supply exhausted, or the bidder cannot afford any) are skipped — they receive no `bid_ranking` row.
+- Affordability cap: each winner's allocation is limited to what their `balance` can cover, and their balance is debited by `allocated_quantity × bid_price` inside the same transaction.
 - The clearing price for IPOs is the price at which the last share was allocated (highest bid that received at least one share).
 
 ---
@@ -933,14 +940,16 @@ HTTP status codes: `200` OK · `201` Created · `400` Bad Request · `401` Unaut
 
 ### Page Map
 
+All application routes except `/login` and `/register` are wrapped in a `PrivateRoute` guard (redirects to `/login` when unauthenticated); `/admin` additionally requires the `admin` role via `AdminRoute`.
+
 | Route | Page | Access | Description |
 |-------|------|--------|-------------|
-| `/` | Home | Public | Market overview — stat cards, live auction grid, market pulse sidebar |
-| `/auctions` | Auctions | Public | Filterable stock auction list with search and sort |
-| `/ipos` | IPOPage | Public | IPO-specific auction list with price band visualization |
-| `/auction/:id` | AuctionDetail | Investor | Live bid ladder, order entry panel, countdown timer |
-| `/portfolio` | Portfolio | Investor | Holdings grid/table with P&L and composition bar |
-| `/transactions` | Transactions | Investor | Allocation history table with totals |
+| `/` | Home | Authenticated | Market overview — stat cards, live auction grid, market pulse sidebar |
+| `/auctions` | Auctions | Authenticated | Filterable stock auction list with search and sort |
+| `/ipo` | IPOPage | Authenticated | IPO-specific auction list with price band visualization |
+| `/auction/:id` | AuctionDetail | Authenticated | Live bid ladder, order entry panel, countdown timer |
+| `/portfolio` | Portfolio | Authenticated | Holdings grid/table with P&L and composition bar |
+| `/transactions` | Transactions | Authenticated | Allocation history table with totals |
 | `/admin` | AdminPanel | Admin | Live monitor, manage table, create auction form |
 | `/login` | Login | Public | Photography split-screen with demo account quick-fill |
 | `/register` | Register | Public | Split-screen registration form |
@@ -985,7 +994,7 @@ The frontend uses **polling every 3 seconds** via `setInterval`. The Page Visibi
 | Admin-only routes | `/auctions` POST/PATCH and `/bids/all` check `req.user.role === 'admin'` |
 | CORS | Restricted to `ALLOWED_ORIGIN` env var (defaults `http://localhost:3000`) |
 | Secrets management | `JWT_SECRET` and DB credentials loaded from `.env`; server emits a startup warning if `JWT_SECRET` is absent |
-| Token storage | Frontend stores JWT in React context (in-memory); lost on page refresh by design — re-login required |
+| Token storage | Frontend stores the JWT in `localStorage` (persists across refresh). An Axios response interceptor clears it and redirects to `/login` on any `401`. Note: `localStorage` is readable by JavaScript, so this trades XSS resistance for session persistence — an httpOnly cookie would be the hardened alternative |
 
 ---
 
@@ -1195,7 +1204,7 @@ dbms/
 | Simulated current price | `portfolio.currentPrice = base_price × 1.05` — a static approximation, not live market data |
 | No bid cancellation | Once placed, a bid is permanent for the auction's duration |
 | Long-polling only | Real-time updates use 3-second client polling. No WebSocket push — latency up to 3 s |
-| Balance not deducted | `user.balance` field exists in the schema but is not decremented when a bid is placed or allocation occurs |
+| Balance not escrowed | Balance is validated at bid time and debited on allocation (allocation is capped by what each winner can afford), but funds are **not reserved** when a bid is placed — a user may hold multiple outstanding bids whose combined total exceeds their balance until allocation caps them |
 | Single server | No load balancing or horizontal scaling — single Node.js process |
 | No email verification | User registration does not verify email address |
 
@@ -1204,7 +1213,7 @@ dbms/
 | Enhancement | Description |
 |------------|-------------|
 | WebSocket push | Replace polling with `socket.io` for sub-second bid ladder updates |
-| Balance enforcement | Deduct `bid_price × quantity` at bid time; return funds on outbid |
+| Balance escrow | Reserve `bid_price × quantity` when a bid is placed and release it automatically when the bid is outbid, rather than only debiting at allocation |
 | Bid cancellation | Allow investors to cancel bids before auction close within a cooldown window |
 | Live market prices | Integrate a market data feed (e.g., NSE/BSE sandbox API) for real-time P&L |
 | Notifications | Email or push alerts for bid outbid, auction close, and allocation results |

@@ -21,7 +21,7 @@ export default function Login() {
       addToast(`Welcome back, ${res.data.user.name}`, "success");
       navigate(res.data.user.role === "admin" ? "/admin" : "/");
     } catch (err) {
-      setError(err.message || "Login failed");
+      setError(err.response?.data?.error || err.message || "Login failed");
     } finally {
       setLoading(false);
     }

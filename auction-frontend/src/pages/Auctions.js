@@ -56,7 +56,7 @@ export default function Auctions() {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em" }}>Auctions</h1>
+            <h1 className="gradient-text" style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em" }}>Auctions</h1>
             {liveCount > 0 && (
               <div style={{
                 display: "flex", alignItems: "center", gap: 5,
@@ -146,7 +146,16 @@ export default function Auctions() {
           background: "var(--bg-card)", border: "1px solid var(--border)",
           borderRadius: "var(--radius-lg)",
         }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>🔍</div>
+          <div style={{
+            width: 56, height: 56, borderRadius: 14,
+            background: "var(--bg-secondary)", border: "1px solid var(--border)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            margin: "0 auto 12px",
+          }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </div>
           <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 6 }}>No results found</div>
           <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Try adjusting your search or filter</div>
           {search && (
@@ -156,7 +165,7 @@ export default function Auctions() {
           )}
         </div>
       ) : (
-        <div className="grid-responsive">
+        <div className="grid-responsive stagger-children">
           {filtered.map((a) => <AuctionCard key={a.id} auction={a} />)}
         </div>
       )}

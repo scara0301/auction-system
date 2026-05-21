@@ -17,6 +17,26 @@ const STATUS = {
   closed:   { color: "var(--text-muted)", label: "CLOSED", glow: "none" },
 };
 
+// Inline SVG icons (anti-slop: no emoji)
+const IconTrophy = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 9H4.5a2.5 2.5 0 010-5H6M18 9h1.5a2.5 2.5 0 000-5H18" />
+    <path d="M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+    <path d="M18 2H6v7a6 6 0 0012 0V2z" />
+  </svg>
+);
+const IconBolt = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+);
+const IconClipboard = ({ size = 28 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
+    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+  </svg>
+);
+
 export default function AuctionDetail() {
   const { id }   = useParams();
   const navigate = useNavigate();
@@ -209,7 +229,7 @@ export default function AuctionDetail() {
           className={isHighestBidder ? "bid-status-highest" : "bid-status-outbid"}
           style={{ marginBottom: 14 }}
         >
-          <span style={{ fontSize: 16 }}>{isHighestBidder ? "🏆" : "⚡"}</span>
+          <span style={{ display: "flex", alignItems: "center" }}>{isHighestBidder ? <IconTrophy size={16} /> : <IconBolt size={16} />}</span>
           {isHighestBidder
             ? `You're leading at ₹${myBid.price.toLocaleString("en-IN")} × ${myBid.quantity.toLocaleString("en-IN")} shares`
             : `Outbid — your last bid: ₹${myBid.price.toLocaleString("en-IN")} · Current: ₹${auction.currentHighestBid.toLocaleString("en-IN")}`}
@@ -263,7 +283,7 @@ export default function AuctionDetail() {
 
             {bids.length === 0 ? (
               <div style={{ padding: "40px 20px", textAlign: "center" }}>
-                <div style={{ fontSize: 28, marginBottom: 8 }}>📋</div>
+                <div style={{ color: "var(--text-muted)", marginBottom: 8, display: "flex", justifyContent: "center" }}><IconClipboard size={28} /></div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 4 }}>No bids yet</div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Be the first to place a bid</div>
               </div>
@@ -300,8 +320,8 @@ export default function AuctionDetail() {
                             transition: "background 0.2s",
                           }}
                         >
-                          <td style={{ padding: "10px 14px", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-muted)", fontWeight: 700 }}>
-                            {idx === 0 ? "🏆" : `#${idx + 1}`}
+                          <td style={{ padding: "10px 14px", fontFamily: "var(--font-mono)", fontSize: 12, color: isTop ? "var(--green)" : "var(--text-muted)", fontWeight: 700 }}>
+                            {idx === 0 ? <span style={{ display: "inline-flex", verticalAlign: "middle" }}><IconTrophy size={14} /></span> : `#${idx + 1}`}
                           </td>
                           <td style={{ padding: "10px 14px" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>

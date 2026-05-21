@@ -220,8 +220,15 @@ export default function IPOPage() {
 
   useEffect(() => {
     load();
-    const interval = setInterval(load, 3000);
-    const onVisibility = () => { if (document.hidden) clearInterval(interval); };
+    let interval = setInterval(load, 3000);
+    const onVisibility = () => {
+      if (document.hidden) {
+        clearInterval(interval);
+      } else {
+        load();
+        interval = setInterval(load, 3000);
+      }
+    };
     document.addEventListener("visibilitychange", onVisibility);
     return () => { clearInterval(interval); document.removeEventListener("visibilitychange", onVisibility); };
   }, [load]);
@@ -234,7 +241,7 @@ export default function IPOPage() {
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em" }}>IPO Auctions</h1>
+          <h1 className="gradient-text gradient-text-candy" style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em" }}>IPO Auctions</h1>
           {liveCount > 0 && (
             <div style={{
               display: "flex", alignItems: "center", gap: 5,
@@ -325,7 +332,7 @@ export default function IPOPage() {
           <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Check back soon for new listings</div>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 14 }}>
+        <div className="stagger-children" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 14 }}>
           {filtered.map((ipo) => (
             <IPOCard key={ipo.id} ipo={ipo} onClick={() => navigate(`/auction/${ipo.id}`)} />
           ))}

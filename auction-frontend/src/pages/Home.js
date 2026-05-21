@@ -101,7 +101,7 @@ export default function Home() {
     <div className="page-wrapper">
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, letterSpacing: "-0.02em" }}>
+        <h1 className="gradient-text" style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, letterSpacing: "-0.02em" }}>
           Market Overview
         </h1>
         <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
@@ -180,7 +180,7 @@ export default function Home() {
               No auctions in this category
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14 }}>
+            <div className="stagger-children" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14 }}>
               {filtered.map((a) => (
                 <AuctionCard key={a.id} auction={a} />
               ))}

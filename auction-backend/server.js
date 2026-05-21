@@ -99,6 +99,100 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
+// ── Account Routes (self-service) ────────────────────────────────────────────────
+
+// Fetch the current user's fresh profile (includes balance, which the JWT doesn't carry)
+app.get("/api/auth/me", authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT user_id, name, email, username, role, balance, created_at FROM "user" WHERE user_id = $1`,
+      [req.user.user_id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: "User not found" });
+    const u = result.rows[0];
+    res.json({ ...u, balance: parseFloat(u.balance) });
+  } catch (err) {
+    console.error("[GET /api/auth/me]", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Update profile (name/email/username) and optionally change password.
+// Re-issues the JWT because the token payload embeds name/email/username/role.
+app.patch("/api/auth/me", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const { name, email, username, currentPassword, newPassword } = req.body;
+
+    if (!name?.trim() || !email?.trim() || !username?.trim()) {
+      return res.status(400).json({ error: "Name, email, and username are required" });
+    }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+    if (username.trim().length < 3 || username.trim().length > 50) {
+      return res.status(400).json({ error: "Username must be 3–50 characters" });
+    }
+
+    // Build the update; append the password column only when a new one is supplied
+    const params = [name.trim(), email.trim(), username.trim()];
+    let passwordClause = "";
+    let idx = 4;
+    if (newPassword) {
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: "New password must be at least 6 characters" });
+      }
+      const cur = await pool.query(`SELECT password FROM "user" WHERE user_id = $1`, [userId]);
+      const valid = currentPassword && (await bcrypt.compare(currentPassword, cur.rows[0].password));
+      if (!valid) return res.status(400).json({ error: "Current password is incorrect" });
+      passwordClause = `, password = $${idx++}`;
+      params.push(await bcrypt.hash(newPassword, 10));
+    }
+    params.push(userId);
+
+    const result = await pool.query(
+      `UPDATE "user" SET name = $1, email = $2, username = $3${passwordClause}
+       WHERE user_id = $${idx}
+       RETURNING user_id, name, email, username, role`,
+      params
+    );
+    const user = result.rows[0];
+    const token = jwt.sign(user, JWT_SECRET, { expiresIn: "24h" });
+    res.json({ user, token });
+  } catch (err) {
+    if (err.code === "23505") return res.status(400).json({ error: "Username or email already taken" });
+    console.error("[PATCH /api/auth/me]", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Delete the current user's account. ON DELETE CASCADE removes their bids,
+// portfolio, transactions, and watchlist automatically.
+// Guard: the last admin cannot delete themselves (would lock out the system).
+app.delete("/api/auth/me", authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role === "admin") {
+      const adminCount = await pool.query(
+        `SELECT COUNT(*) FROM "user" WHERE role = 'admin'`
+      );
+      if (parseInt(adminCount.rows[0].count, 10) <= 1) {
+        return res.status(400).json({
+          error: "Cannot delete the last admin account. Promote another user to admin first.",
+        });
+      }
+    }
+    const result = await pool.query(
+      `DELETE FROM "user" WHERE user_id = $1 RETURNING user_id`,
+      [req.user.user_id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: "User not found" });
+    res.json({ message: "Account deleted" });
+  } catch (err) {
+    console.error("[DELETE /api/auth/me]", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // ── Auction Routes ──────────────────────────────────────────────────────────────
 
 app.get("/api/auctions", async (req, res) => {
@@ -203,27 +297,31 @@ app.get("/api/auctions/:id", async (req, res) => {
 });
 
 app.post("/api/auctions", authMiddleware, adminOnly, async (req, res) => {
+  const { type, company, ticker, sector, description, totalShares, basePrice, startTime, endTime, priceBandMin, priceBandMax } = req.body;
+
+  // Input validation
+  if (!type || !company?.trim() || !ticker?.trim() || !totalShares || !basePrice || !startTime || !endTime) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+  if (!["stock", "ipo"].includes(type)) {
+    return res.status(400).json({ error: "Type must be stock or ipo" });
+  }
+  if (parseFloat(basePrice) <= 0) {
+    return res.status(400).json({ error: "Base price must be positive" });
+  }
+  if (parseInt(totalShares) < 1) {
+    return res.status(400).json({ error: "Total shares must be at least 1" });
+  }
+  if (new Date(startTime) >= new Date(endTime)) {
+    return res.status(400).json({ error: "End time must be after start time" });
+  }
+
+  // Fix #3: company + stock/ipo + auction created atomically — no orphan rows on failure
+  const client = await pool.connect();
   try {
-    const { type, company, ticker, sector, description, totalShares, basePrice, startTime, endTime, priceBandMin, priceBandMax } = req.body;
+    await client.query("BEGIN");
 
-    // Input validation
-    if (!type || !company?.trim() || !ticker?.trim() || !totalShares || !basePrice || !startTime || !endTime) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-    if (!["stock", "ipo"].includes(type)) {
-      return res.status(400).json({ error: "Type must be stock or ipo" });
-    }
-    if (parseFloat(basePrice) <= 0) {
-      return res.status(400).json({ error: "Base price must be positive" });
-    }
-    if (parseInt(totalShares) < 1) {
-      return res.status(400).json({ error: "Total shares must be at least 1" });
-    }
-    if (new Date(startTime) >= new Date(endTime)) {
-      return res.status(400).json({ error: "End time must be after start time" });
-    }
-
-    const compResult = await pool.query(
+    const compResult = await client.query(
       `INSERT INTO company (company_name, ticker, sector, description, logo_letter) VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (ticker) DO UPDATE SET company_name = EXCLUDED.company_name, sector = EXCLUDED.sector, description = EXCLUDED.description
        RETURNING company_id`,
@@ -233,14 +331,14 @@ app.post("/api/auctions", authMiddleware, adminOnly, async (req, res) => {
 
     let refId;
     if (type === "ipo") {
-      const ipoResult = await pool.query(
+      const ipoResult = await client.query(
         `INSERT INTO ipo (company_id, total_shares, price_band_min, price_band_max, start_date, end_date, status) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING ipo_id`,
         [companyId, parseInt(totalShares), priceBandMin || basePrice, priceBandMax || parseFloat(basePrice) * 1.2, startTime, endTime, "upcoming"]
       );
       refId = ipoResult.rows[0].ipo_id;
     } else {
       // ON CONFLICT on company_id so re-creating an auction for the same company reuses/updates the stock
-      const stockResult = await pool.query(
+      const stockResult = await client.query(
         `INSERT INTO stock (company_id, total_shares, available_shares, base_price) VALUES ($1, $2, $3, $4)
          ON CONFLICT (company_id) DO UPDATE SET
            total_shares = EXCLUDED.total_shares,
@@ -252,14 +350,19 @@ app.post("/api/auctions", authMiddleware, adminOnly, async (req, res) => {
       refId = stockResult.rows[0].stock_id;
     }
 
-    const auctionResult = await pool.query(
+    const auctionResult = await client.query(
       `INSERT INTO auction (type, reference_id, start_time, end_time, base_price, status) VALUES ($1, $2, $3, $4, $5, 'upcoming') RETURNING auction_id`,
       [type, refId, startTime, endTime, parseFloat(basePrice)]
     );
+
+    await client.query("COMMIT");
     res.json({ id: auctionResult.rows[0].auction_id, message: "Auction created" });
   } catch (err) {
+    await client.query("ROLLBACK");
     console.error("[POST /api/auctions]", err);
     res.status(500).json({ error: "Internal server error" });
+  } finally {
+    client.release();
   }
 });
 
@@ -315,15 +418,24 @@ app.patch("/api/auctions/:id/close", authMiddleware, adminOnly, async (req, res)
     let remaining = availableShares;
     let rank = 1;
     for (const bid of bidsResult.rows) {
-      const alloc = Math.min(bid.quantity, remaining);
-      if (alloc <= 0) break;
+      if (remaining <= 0) break;
+
+      // Fix #2: cap allocation by what the bidder can actually afford, then debit balance.
+      // A bidder who can't afford their bid is skipped (not blocked) so the next bidder still wins.
+      const balRes = await client.query(`SELECT balance FROM "user" WHERE user_id = $1`, [bid.user_id]);
+      const balance = parseFloat(balRes.rows[0].balance);
+      const affordableQty = Math.floor(balance / parseFloat(bid.bid_price));
+      const alloc = Math.min(bid.quantity, remaining, affordableQty);
+      if (alloc <= 0) continue;
+
+      const totalCost = alloc * bid.bid_price;
       await client.query(
         `INSERT INTO bid_ranking (auction_id, bid_id, rank_position, allocated_quantity) VALUES ($1, $2, $3, $4)`,
         [req.params.id, bid.bid_id, rank, alloc]
       );
       await client.query(
         `INSERT INTO "transaction" (user_id, auction_id, quantity, price, total_amount) VALUES ($1, $2, $3, $4, $5)`,
-        [bid.user_id, req.params.id, alloc, bid.bid_price, alloc * bid.bid_price]
+        [bid.user_id, req.params.id, alloc, bid.bid_price, totalCost]
       );
       const stockId = a.type === "stock" ? a.reference_id : ipoStockId;
       await client.query(`
@@ -333,13 +445,15 @@ app.patch("/api/auctions/:id/close", authMiddleware, adminOnly, async (req, res)
           quantity_owned = portfolio.quantity_owned + EXCLUDED.quantity_owned,
           avg_price = ((portfolio.avg_price * portfolio.quantity_owned) + (EXCLUDED.avg_price * EXCLUDED.quantity_owned)) / (portfolio.quantity_owned + EXCLUDED.quantity_owned)
       `, [bid.user_id, stockId, alloc, bid.bid_price]);
+      await client.query(`UPDATE "user" SET balance = balance - $1 WHERE user_id = $2`, [totalCost, bid.user_id]);
       remaining -= alloc;
       rank++;
     }
 
-    if (a.type === "stock") {
-      await client.query(`UPDATE stock SET available_shares = $1 WHERE stock_id = $2`, [remaining, a.reference_id]);
-    }
+    // Fix #1: write back unallocated shares for BOTH auction types.
+    // Previously only 'stock' was updated, so an IPO's leftover shares were lost (stuck at 0).
+    const settledStockId = a.type === "stock" ? a.reference_id : ipoStockId;
+    await client.query(`UPDATE stock SET available_shares = $1 WHERE stock_id = $2`, [remaining, settledStockId]);
 
     await client.query("COMMIT");
     res.json({ message: "Auction closed and shares allocated", allocations: rank - 1 });
@@ -471,10 +585,28 @@ app.post("/api/bids", authMiddleware, async (req, res) => {
       return res.status(400).json({ error: `Quantity exceeds available shares (${available})` });
     }
 
+    // Fix #2: reject a bid the user cannot afford (price × quantity must fit within balance)
+    const balResult = await pool.query(`SELECT balance FROM "user" WHERE user_id = $1`, [userId]);
+    const balance = parseFloat(balResult.rows[0].balance);
+    const bidTotal = bidPrice * bidQty;
+    if (bidTotal > balance) {
+      return res.status(400).json({
+        error: `Insufficient balance — bid total ₹${bidTotal.toLocaleString("en-IN")} exceeds your balance of ₹${balance.toLocaleString("en-IN")}`,
+      });
+    }
+
+    // Fix #4: enforce the ₹0.50 increment atomically inside the INSERT to close the
+    // read-then-write race. The row is only created if it still beats the live max bid.
     const result = await pool.query(
-      `INSERT INTO bid (auction_id, user_id, bid_price, quantity) VALUES ($1, $2, $3, $4) RETURNING bid_id`,
-      [auctionId, userId, bidPrice, bidQty]
+      `INSERT INTO bid (auction_id, user_id, bid_price, quantity)
+       SELECT $1, $2, $3, $4
+       WHERE $3 >= COALESCE((SELECT MAX(bid_price) FROM bid WHERE auction_id = $1), $5) + 0.50
+       RETURNING bid_id`,
+      [auctionId, userId, bidPrice, bidQty, parseFloat(a.base_price)]
     );
+    if (result.rows.length === 0) {
+      return res.status(409).json({ error: "Another bid was placed first — refresh and bid above the new highest." });
+    }
     res.json({ id: result.rows[0].bid_id, message: "Bid placed successfully" });
   } catch (err) {
     console.error("[POST /api/bids]", err);

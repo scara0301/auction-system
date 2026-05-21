@@ -165,13 +165,13 @@ export const placeBid = async (auctionId, bidData) => {
   return api.post("/bids", { auctionId, ...bidData });
 };
 
-// Portfolio
-export const fetchPortfolio = async (userId) => {
+// Portfolio — user is resolved server-side from the JWT, no param needed
+export const fetchPortfolio = async () => {
   if (USE_DUMMY) {
     await delay(200);
     return { data: DUMMY_PORTFOLIO };
   }
-  return api.get("/portfolio", { params: { userId } });
+  return api.get("/portfolio");
 };
 
 // Auth
@@ -196,6 +196,33 @@ export const registerUser = async (userData) => {
     return { data: { user: newUser, token: `dummy-jwt-${newUser.id}-${Date.now()}` } };
   }
   return api.post("/auth/register", userData);
+};
+
+// Account self-service
+export const fetchMe = async () => {
+  if (USE_DUMMY) {
+    await delay(150);
+    return { data: JSON.parse(localStorage.getItem("user") || "null") };
+  }
+  return api.get("/auth/me");
+};
+
+export const updateProfile = async (payload) => {
+  if (USE_DUMMY) {
+    await delay(300);
+    const current = JSON.parse(localStorage.getItem("user") || "{}");
+    const user = { ...current, name: payload.name, email: payload.email, username: payload.username };
+    return { data: { user, token: localStorage.getItem("authToken") || `dummy-jwt-${Date.now()}` } };
+  }
+  return api.patch("/auth/me", payload);
+};
+
+export const deleteAccount = async () => {
+  if (USE_DUMMY) {
+    await delay(300);
+    return { data: { message: "Account deleted" } };
+  }
+  return api.delete("/auth/me");
 };
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));

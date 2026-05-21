@@ -72,7 +72,7 @@ export default function Register() {
       addToast(`Welcome, ${res.data.user.name}! Your account is ready.`, "success");
       navigate("/");
     } catch (err) {
-      setError(err.message || "Registration failed");
+      setError(err.response?.data?.error || err.message || "Registration failed");
     } finally {
       setLoading(false);
     }

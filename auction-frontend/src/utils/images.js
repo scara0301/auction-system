@@ -1,13 +1,21 @@
 /* Curated Unsplash photo IDs per sector — keeps image logic in one place */
 const PHOTOS = {
-  Technology:   "photo-1518770660439-4636190af475", // circuit board
-  Finance:      "photo-1611974789855-9c2a0a7236a3", // stock charts
-  Healthcare:   "photo-1559757175-0eb30cd8c063",    // medical lab
-  Energy:       "photo-1466611653911-95081537e5b7", // solar field
-  Consumer:     "photo-1556742049-0cfed4f6a45d",    // retail
-  Industrial:   "photo-1565098772267-60af42b81ef2", // factory floor
-  "Real Estate":"photo-1560518883-ce09059eeffa",    // building
-  Utilities:    "photo-1473341304170-971dccb5ac1e", // power lines
+  // Generic sector names (used by admin-created auctions)
+  Technology:            "photo-1518770660439-4636190af475", // circuit board
+  Finance:               "photo-1611974789855-9c2a0a7236a3", // stock charts
+  Healthcare:            "photo-1559757175-0eb30cd8c063",    // medical lab
+  Energy:                "photo-1466611653911-95081537e5b7", // solar field
+  Consumer:              "photo-1556742049-0cfed4f6a45d",    // retail
+  Industrial:            "photo-1565098772267-60af42b81ef2", // factory floor
+  "Real Estate":         "photo-1560518883-ce09059eeffa",    // building
+  Utilities:             "photo-1473341304170-971dccb5ac1e", // power lines
+  // Seeded sector names (aliases mapping to the same images)
+  "Information Technology": "photo-1518770660439-4636190af475", // circuit board
+  Fintech:               "photo-1611974789855-9c2a0a7236a3", // stock charts
+  Pharmaceuticals:       "photo-1559757175-0eb30cd8c063",    // medical lab
+  "Clean Energy":        "photo-1466611653911-95081537e5b7", // solar field
+  Infrastructure:        "photo-1565098772267-60af42b81ef2", // factory floor
+  Cybersecurity:         "photo-1550751827-4bd374173514", // network security
 };
 
 const FALLBACK = "photo-1611974789855-9c2a0a7236a3";

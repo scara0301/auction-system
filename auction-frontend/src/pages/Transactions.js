@@ -40,7 +40,7 @@ export default function Transactions() {
     <div className="page-wrapper">
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", marginBottom: 4 }}>
+        <h1 className="gradient-text gradient-text-sunset" style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", marginBottom: 4 }}>
           Transaction History
         </h1>
         <p style={{ fontSize: 13, color: "var(--text-muted)" }}>

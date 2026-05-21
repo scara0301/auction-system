@@ -169,7 +169,7 @@ export default function AdminPanel() {
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em" }}>Admin Panel</h1>
+          <h1 className="gradient-text" style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em" }}>Admin Panel</h1>
           {liveCount > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 5, background: "var(--green-dim)", border: "1px solid rgba(22,163,74,0.25)", borderRadius: 20, padding: "3px 10px" }}>
               <span className="live-dot" style={{ width: 6, height: 6 }} />
