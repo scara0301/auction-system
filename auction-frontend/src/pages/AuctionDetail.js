@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { fetchAuctionById, fetchBids, closeAuction } from "../services/api";
+import { fetchAuctionById, fetchBids, closeAuction, fetchWatchlist, addToWatchlist, removeFromWatchlist } from "../services/api";
 import { useAuth, useToast } from "../context/AppContext";
 import Timer from "../components/Timer";
 import BidForm from "../components/BidForm";
@@ -48,6 +48,8 @@ export default function AuctionDetail() {
   const [loading, setLoading]   = useState(true);
   const [closingAuction, setClosingAuction] = useState(false);
   const [confirm, setConfirm]   = useState(null);
+  const [watched, setWatched]       = useState(false);
+  const [watchLoading, setWatchLoading] = useState(false);
 
   const myBidder       = user?.username || "";
   const myBid          = myBidder ? bids.find((b) => b.bidder === myBidder) : null;
@@ -75,6 +77,35 @@ export default function AuctionDetail() {
     document.addEventListener("visibilitychange", onVisibility);
     return () => { clearInterval(interval); document.removeEventListener("visibilitychange", onVisibility); };
   }, [loadData]);
+
+  // Check if this stock is already in the watchlist (only for stock-type auctions)
+  useEffect(() => {
+    if (!auction || auction.type !== "stock" || isAdmin) return;
+    fetchWatchlist().then((res) => {
+      const inList = res.data.some((w) => w.stock_id === auction.reference_id);
+      setWatched(inList);
+    }).catch(() => {});
+  }, [auction, isAdmin]);
+
+  const handleToggleWatch = async () => {
+    if (!auction) return;
+    setWatchLoading(true);
+    try {
+      if (watched) {
+        await removeFromWatchlist(auction.reference_id);
+        setWatched(false);
+        addToast(`Removed ${auction.company} from watchlist.`, "success");
+      } else {
+        await addToWatchlist(auction.reference_id);
+        setWatched(true);
+        addToast(`${auction.company} added to watchlist.`, "success");
+      }
+    } catch (err) {
+      addToast(err.response?.data?.error || "Failed to update watchlist.", "error");
+    } finally {
+      setWatchLoading(false);
+    }
+  };
 
   const handleCloseAuction = () => {
     setConfirm({
@@ -209,6 +240,31 @@ export default function AuctionDetail() {
                 {chgUp ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}% vs base ₹{auction.basePrice.toLocaleString("en-IN")}
               </div>
             </div>
+            {/* Watch button — only for stock-type auctions, investors only */}
+            {!isAdmin && auction.type === "stock" && (
+              <button
+                onClick={handleToggleWatch}
+                disabled={watchLoading}
+                title={watched ? "Remove from watchlist" : "Add to watchlist"}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "7px 14px", fontSize: 12, fontWeight: 700,
+                  borderRadius: "var(--radius-md)", cursor: "pointer",
+                  border: `1px solid ${watched ? "rgba(245,158,11,0.4)" : "var(--border)"}`,
+                  background: watched ? "rgba(245,158,11,0.08)" : "var(--bg-secondary)",
+                  color: watched ? "var(--yellow)" : "var(--text-muted)",
+                  transition: "all 0.15s",
+                  opacity: watchLoading ? 0.6 : 1,
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24"
+                  fill={watched ? "currentColor" : "none"}
+                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+                {watchLoading ? "…" : watched ? "Watching" : "Watch"}
+              </button>
+            )}
             {isAdmin && auction.status === "open" && (
               <button
                 className="btn-danger"
