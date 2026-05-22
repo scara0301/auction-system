@@ -12,6 +12,7 @@ import IPOPage from "./pages/IPOPage";
 import AdminPanel from "./pages/AdminPanel";
 import Transactions from "./pages/Transactions";
 import Settings from "./pages/Settings";
+import Watchlist from "./pages/Watchlist";
 
 // Route guard for authenticated users
 function PrivateRoute({ children }) {
@@ -55,6 +56,7 @@ function AppRoutes() {
           <Route path="/portfolio" element={<PrivateRoute><Portfolio /></PrivateRoute>} />
           <Route path="/ipo" element={<PrivateRoute><IPOPage /></PrivateRoute>} />
           <Route path="/transactions" element={<PrivateRoute><Transactions /></PrivateRoute>} />
+          <Route path="/watchlist" element={<PrivateRoute><Watchlist /></PrivateRoute>} />
           <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
 
           {/* Admin */}

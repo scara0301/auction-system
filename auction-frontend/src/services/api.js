@@ -225,6 +225,22 @@ export const deleteAccount = async () => {
   return api.delete("/auth/me");
 };
 
+// Watchlist
+export const fetchWatchlist = async () => {
+  if (USE_DUMMY) { await delay(150); return { data: [] }; }
+  return api.get("/watchlist");
+};
+
+export const addToWatchlist = async (stockId) => {
+  if (USE_DUMMY) { await delay(200); return { data: { message: "Added to watchlist" } }; }
+  return api.post("/watchlist", { stockId });
+};
+
+export const removeFromWatchlist = async (stockId) => {
+  if (USE_DUMMY) { await delay(200); return { data: { message: "Removed from watchlist" } }; }
+  return api.delete(`/watchlist/${stockId}`);
+};
+
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
 export default api;
