@@ -80,23 +80,25 @@ export default function AuctionDetail() {
 
   // Check if this stock is already in the watchlist (only for stock-type auctions)
   useEffect(() => {
-    if (!auction || auction.type !== "stock" || isAdmin) return;
+    if (!auction || auction.type !== "stock") return;
     fetchWatchlist().then((res) => {
-      const inList = res.data.some((w) => w.stock_id === auction.reference_id);
+      const refId = auction.referenceId || auction.reference_id;
+      const inList = res.data.some((w) => w.stock_id === refId);
       setWatched(inList);
     }).catch(() => {});
-  }, [auction, isAdmin]);
+  }, [auction]);
 
   const handleToggleWatch = async () => {
     if (!auction) return;
     setWatchLoading(true);
     try {
+      const refId = auction.referenceId || auction.reference_id;
       if (watched) {
-        await removeFromWatchlist(auction.reference_id);
+        await removeFromWatchlist(refId);
         setWatched(false);
         addToast(`Removed ${auction.company} from watchlist.`, "success");
       } else {
-        await addToWatchlist(auction.reference_id);
+        await addToWatchlist(refId);
         setWatched(true);
         addToast(`${auction.company} added to watchlist.`, "success");
       }
@@ -240,8 +242,8 @@ export default function AuctionDetail() {
                 {chgUp ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}% vs base ₹{auction.basePrice.toLocaleString("en-IN")}
               </div>
             </div>
-            {/* Watch button — only for stock-type auctions, investors only */}
-            {!isAdmin && auction.type === "stock" && (
+            {/* Watch button — only for stock-type auctions */}
+            {auction.type === "stock" && (
               <button
                 onClick={handleToggleWatch}
                 disabled={watchLoading}
