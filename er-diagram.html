@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>ER Diagram</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0f172a; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 32px; font-family: sans-serif; }
+  .wrap { background: #1e293b; border-radius: 16px; padding: 32px; box-shadow: 0 25px 60px rgba(0,0,0,0.5); max-width: 1400px; width: 100%; }
+  h1 { color: #e2e8f0; font-size: 22px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.02em; }
+  p  { color: #64748b; font-size: 13px; margin-bottom: 28px; }
+  #diagram { display: flex; justify-content: center; }
+  .mermaid svg { max-width: 100%; border-radius: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Stock Auction System — Entity Relationship Diagram</h1>
+  <p>10 entities · PostgreSQL · referential integrity via ON DELETE CASCADE</p>
+  <div id="diagram">
+    <div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"primaryColor":"#334155","primaryTextColor":"#e2e8f0","primaryBorderColor":"#475569","lineColor":"#6366f1","secondaryColor":"#1e293b","tertiaryColor":"#0f172a","edgeLabelBackground":"#1e293b","fontFamily":"ui-monospace,monospace","fontSize":"13px"}}}%%
+erDiagram
+    USER {
+        int user_id PK
+        varchar name
+        varchar email UK
+        varchar username UK
+        varchar password
+        varchar role
+        decimal balance
+        timestamptz created_at
+    }
+    COMPANY {
+        int company_id PK
+        varchar company_name
+        varchar ticker UK
+        varchar sector
+        text description
+        char logo_letter
+        timestamptz created_at
+    }
+    STOCK {
+        int stock_id PK
+        int company_id FK
+        int total_shares
+        int available_shares
+        decimal base_price
+    }
+    IPO {
+        int ipo_id PK
+        int company_id FK
+        int total_shares
+        decimal price_band_min
+        decimal price_band_max
+        timestamptz start_date
+        timestamptz end_date
+        varchar status
+    }
+    AUCTION {
+        int auction_id PK
+        varchar type
+        int reference_id
+        timestamptz start_time
+        timestamptz end_time
+        decimal base_price
+        varchar status
+        timestamptz created_at
+    }
+    BID {
+        int bid_id PK
+        int auction_id FK
+        int user_id FK
+        decimal bid_price
+        int quantity
+        timestamptz bid_time
+    }
+    BID_RANKING {
+        int ranking_id PK
+        int auction_id FK
+        int bid_id FK
+        int rank_position
+        int allocated_quantity
+    }
+    PORTFOLIO {
+        int portfolio_id PK
+        int user_id FK
+        int stock_id FK
+        int quantity_owned
+        decimal avg_price
+    }
+    TRANSACTION {
+        int transaction_id PK
+        int user_id FK
+        int auction_id FK
+        int quantity
+        decimal price
+        decimal total_amount
+        timestamptz transaction_date
+    }
+    WATCHLIST {
+        int watchlist_id PK
+        int user_id FK
+        int stock_id FK
+        timestamptz added_date
+    }
+
+    COMPANY ||--o| STOCK        : "has (UNIQUE)"
+    COMPANY ||--o{ IPO          : "launches"
+    STOCK   ||--o{ AUCTION      : "type = stock"
+    IPO     ||--o{ AUCTION      : "type = ipo"
+    USER    ||--o{ BID          : "places"
+    AUCTION ||--o{ BID          : "receives"
+    AUCTION ||--o{ BID_RANKING  : "ranks"
+    BID     ||--o| BID_RANKING  : "ranked as"
+    USER    ||--o{ PORTFOLIO    : "holds"
+    STOCK   ||--o{ PORTFOLIO    : "held in"
+    USER    ||--o{ TRANSACTION  : "makes"
+    AUCTION ||--o{ TRANSACTION  : "generates"
+    USER    ||--o{ WATCHLIST    : "watches"
+    STOCK   ||--o{ WATCHLIST    : "watched via"
+    </div>
+  </div>
+</div>
+<script>
+  mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });
+</script>
+</body>
+</html>
